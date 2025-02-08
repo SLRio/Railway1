@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD Operations Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CRUD Operations Test</h1>
+
+    <!-- Create Item -->
+    <h2>Create Item</h2>
+    <form id="createForm">
+        <label for="date">Date:</label>
+        <input type="date" id="date" required>
+        <br>
+        <label for="value">Value:</label>
+        <input type="number" id="value" required>
+        <br>
+        <button type="submit">Create</button>
+    </form>
+    <p id="createResult"></p>
+
+    <!-- Read Items -->
+    <h2>Read Items</h2>
+    <button id="readButton">Fetch All Items</button>
+    <textarea id="readResult" readonly></textarea>
+
+    <!-- Update Item -->
+    <h2>Update Item</h2>
+    <form id="updateForm">
+        <label for="updateId">Item ID:</label>
+        <input type="text" id="updateId" required>
+        <br>
+        <label for="updateDate">New Date:</label>
+        <input type="date" id="updateDate" required>
+        <br>
+        <label for="updateValue">New Value:</label>
+        <input type="number" id="updateValue" required>
+        <br>
+        <button type="submit">Update</button>
+    </form>
+    <p id="updateResult"></p>
+
+    <!-- Delete Item -->
+    <h2>Delete Item</h2>
+    <form id="deleteForm">
+        <label for="deleteId">Item ID:</label>
+        <input type="text" id="deleteId" required>
+        <br>
+        <button type="submit">Delete</button>
+    </form>
+    <p id="deleteResult"></p>
+
+    <script>
+        const API_URL = "http://localhost:5000/items"; // Update this if your API URL is different
+
+        // Create Item
+        document.getElementById("createForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const date = document.getElementById("date").value;
+            const value = document.getElementById("value").value;
+
+            try {
+                const res = await fetch(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date, value }),
+                });
+                const data = await res.json();
+                document.getElementById("createResult").textContent = `Created: ${JSON.stringify(data)}`;
+            } catch (error) {
+                document.getElementById("createResult").textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Read Items
+        document.getElementById("readButton").addEventListener("click", async () => {
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                document.getElementById("readResult").value = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById("readResult").value = `Error: ${error.message}`;
+            }
+        });
+
+        // Update Item
+        document.getElementById("updateForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.getElementById("updateId").value;
+            const date = document.getElementById("updateDate").value;
+            const value = document.getElementById("updateValue").value;
+
+            try {
+                const res = await fetch(`${API_URL}/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ date, value }),
+                });
+                const data = await res.json();
+                document.getElementById("updateResult").textContent = `Updated: ${JSON.stringify(data)}`;
+            } catch (error) {
+                document.getElementById("updateResult").textContent = `Error: ${error.message}`;
+            }
+        });
+
+        // Delete Item
+        document.getElementById("deleteForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const id = document.getElementById("deleteId").value;
+
+            try {
+                const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+                const data = await res.json();
+                document.getElementById("deleteResult").textContent = `Deleted: ${JSON.stringify(data)}`;
+            } catch (error) {
+                document.getElementById("deleteResult").textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
