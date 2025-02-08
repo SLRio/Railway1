@@ -1,52 +1,125 @@
-require('dotenv').config(); // Load environment variables
+// server.js (Backend)
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
-const connectDB = require('./db'); // Import DB connection
-const Item = require('./models/Item'); // Import Mongoose model
 
 const app = express();
-const port = process.env.PORT || 5000;
-
-// Connect to MongoDB
-connectDB();
-
-// Middleware
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// Serve static files (index.html)
-app.use(express.static(path.join(__dirname, 'public')));
+const mongoURI = process.env.MONGO_URI || "mongodb+srv://Rio:RioAstal1234@rio.kh2t4sq.mongodb.net/?retryWrites=true&w=majority"; // Use environment variable for security
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
 
-// Create Item (Save ESP data)
-app.post('/items', async (req, res) => {
-    const { date, value } = req.body;
-    const newItem = new Item({ date, value });
+const DataSchema = new mongoose.Schema({
+    value: Number,
+    date: Date
+});
+const DataModel = mongoose.model('Data', DataSchema);
 
-    try {
-        await newItem.save();
-        res.status(201).json(newItem);
-    } catch (error) {
-        res.status(500).json({ message: 'Error saving item', error });
-    }
+// CRUD Endpoints
+app.get('/data', async (req, res) => {
+    const data = await DataModel.find();
+    res.json(data);
 });
 
-// Get All Items
-app.get('/items', async (req, res) => {
-    try {
-        const items = await Item.find();
-        res.json(items);
-    } catch (error) {
-        res.status(500).json({ message: 'Error fetching items', error });
-    }
+app.post('/data', async (req, res) => {
+    const newData = new DataModel(req.body);
+    await newData.save();
+    res.json(newData);
 });
 
-// Serve index.html by default
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.put('/data/:id', async (req, res) => {
+    await DataModel.findByIdAndUpdate(req.params.id, req.body);
+    res.json({ message: 'Data updated' });
 });
 
-// Start the server
-app.listen(port, () => {
-    console.log(`🚀 Server running at http://localhost:${port}`);
+app.delete('/data/:id', async (req, res) => {
+    await DataModel.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Data deleted' });
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// React Frontend (App.js)
+import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import axios from 'axios';
+
+const API_URL = "https://your-backend.up.railway.app"; // Replace with your actual Railway backend URL
+
+const Dashboard = () => {
+    const [data, setData] = useState([]);
+
+    useEffect(() => {
+        axios.get(`${API_URL}/data`).then(response => setData(response.data));
+    }, []);
+
+    return (
+        <div>
+            <h2>Graph View</h2>
+            <LineChart width={600} height={300} data={data}>
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="value" stroke="#8884d8" />
+            </LineChart>
+        </div>
+    );
+};
+
+const ManageData = () => {
+    const [data, setData] = useState([]);
+    const [newValue, setNewValue] = useState('');
+
+    useEffect(() => {
+        axios.get(`${API_URL}/data`).then(response => setData(response.data));
+    }, []);
+
+    const addData = () => {
+        axios.post(`${API_URL}/data`, { value: newValue, date: new Date() })
+            .then(response => setData([...data, response.data]));
+    };
+
+    return (
+    const [data, setData] = useState([]);
+
+    useEffect(() => {
+        axios.get(`${API_URL}/data`).then(response => setData(response.data));
+    }, []);
+
+    return (
+        <div>
+            <h2>Graph View</h2>
+            <LineChart width={600} height={300} data={data}>
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="value" stroke="#88
+        <div>
+            <h2>Manage Data</h2>
+            <input type="number" value={newValue} onChange={(e) => setNewValue(e.target.value)} />
+            <button onClick={addData}>Add Data</button>
+        </div>
+    );
+};
+
+const App = () => {
+    return (
+        <Router>
+            <nav>
+                <Link to="/">Dashboard</Link>
+                <Link to="/manage">Manage Data</Link>
+            </nav>
+            <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/manage" element={<ManageData />} />
+            </Routes>
+        </Router>
+    );
+};
+
+export default App;
